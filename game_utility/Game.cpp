@@ -1,43 +1,15 @@
+#ifndef game_c
+#define game_c
+
 void Game::initialize_game(int n) {
   this->n = n;
   this->total_squares = n * n;
-  switch (n) {
-    case 5:
-      this->max_flats = 21;
-      this->max_capstones = 1;
-      break;
-
-    case 6:
-      this->max_flats = 30;
-      this->max_capstones = 1;
-      break;
-
-    case 7:
-      this->max_flats = 40;
-      this->max_capstones = 1;
-      break;
-
-    default:
-      break;
-  }
-  //initialize the board with empty boxes
-  for (int i = 0; i < this->total_squares; i++) {
-    vector<pair<int, char>> initial;
-    board.push_back(initial);
-  }
 
   this->max_movable = n;
   this->max_up = n;
   this->max_down = 1;
   this->max_left = 'a';
   this->max_right = (char) ('a' + n - 1);
-
-  players.resize(2);
-  players[0].flats = this->max_flats;
-  players[0].capstones = this->max_capstones;
-
-  players[1].flats = this->max_flats;
-  players[1].capstones = this->max_capstones;
 
   for (int i = 0; i < this->total_squares; i++) {
     all_squares.push_back(this->square_to_string(i));
@@ -144,7 +116,7 @@ vector<string> Game::generate_stack_moves(int square, vector<vector<pair<int, ch
     for (int di = 0; di < 4; di++) {
       for (auto iter = part_list.begin(); iter != part_list.end(); iter++) {
         if ((*iter).size() <= rem_squares[di]) {
-          if (this->check_valid(square, dirs[di], (*iter))) {
+          if (this->check_valid(square, dirs[di], (*iter), board)) {
             string move = "";
             int sum = 0;
             for (auto parts = (*iter).begin(); parts != (*iter).end(); parts++) {
@@ -161,7 +133,8 @@ vector<string> Game::generate_stack_moves(int square, vector<vector<pair<int, ch
   return all_moves;
 }
 
-vector<string> Game::generate_all_moves(int player, vector<vector<pair<int, char>>> board, vector<Player> players) {
+vector<string> Game::generate_all_moves(int player, bool first, vector<vector<pair<int, char>>> board,
+                                        vector<Player> players) {
   //generate all possible moves for player, returns a list of move strings
 
 	vector<string> all_moves;
@@ -172,12 +145,12 @@ vector<string> Game::generate_all_moves(int player, vector<vector<pair<int, char
         all_moves.push_back(move);
       }
       //cannot move standing stone of other player
-      if (this->moves != player && players[player].flats > 0) {
+      if (!first && players[player].flats > 0) {
         string move = "S" + this->all_squares[i];
         all_moves.push_back(move);
       }
       //cannot move capstone of other player
-      if (this->moves != player && players[player].capstones > 0) {
+      if (!first && players[player].capstones > 0) {
         string move = "C" + this->all_squares[i];
         all_moves.push_back(move);
       }
@@ -185,8 +158,8 @@ vector<string> Game::generate_all_moves(int player, vector<vector<pair<int, char
   }
 
   for (int i = 0; i < this->total_squares; i++) {
-    if (board[i].size() > 0 && board[i].back().first == player && this->moves != player) {
-      auto stack_moves = this->generate_stack_moves(i);
+    if (board[i].size() > 0 && board[i].back().first == player && !first) {
+      auto stack_moves = this->generate_stack_moves(i, board);
       all_moves.insert(all_moves.end(), stack_moves.begin(), stack_moves.end());
     }
   }
@@ -254,4 +227,6 @@ vector<vector<pair<int, char>>> Game::execute_move(int current_piece, string mov
 		board[square].erase(begin, end);
     print_vector(board[square]);
   }
+  return board;
 }
+#endif

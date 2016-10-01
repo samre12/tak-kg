@@ -7,13 +7,6 @@
 
 using namespace std;
 
-bool is_valid_alpha(char input) {
-  if ((input >= 'a' && input <= 'z') || (input >= 'A' || input <= 'Z'))
-    return true;
-  else
-    return false;
-}
-
 int return_digit(char input) {
   if (input >= '0' && input <= '9')
     return (int) (input - '0');
