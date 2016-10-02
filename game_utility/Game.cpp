@@ -169,23 +169,23 @@ vector<string> Game::generate_all_moves(int player, bool first, vector<vector<pa
 vector<vector<pair<int, char>>> Game::execute_move(int current_piece, string move_string,
                                                   vector<vector<pair<int, char>>> board, vector<Player> *players) {
   //execute move on the board
-  cerr << isalpha(move_string[0]) << " " << return_digit(move_string[0]) << endl;
+  //cerr << isalpha(move_string[0]) << " " << return_digit(move_string[0]) << endl;
   if (isalpha(move_string[0]) != 0) {
 		int square = this->square_to_num(move_string.substr(1, move_string.size() - 1));
 		if (move_string[0] == 'F' || move_string[0] == 'S') {
 			board[square].push_back(make_pair(current_piece, move_string[0]));
-      print_vector(board[square]);
+      //print_vector(board[square]);
 			(*players)[current_piece].flats -= 1;
     }
 		else if (move_string[0] == 'C') {
 			board[square].push_back(make_pair(current_piece, move_string[0]));
-      print_vector(board[square]);
+      //print_vector(board[square]);
 			(*players)[current_piece].capstones -= 1;
     }
   }
 	else if (return_digit(move_string[0]) != -1) {
 		int count = (int)(move_string[0] - '0');
-    cerr << "count is : " << count << endl;
+    //cerr << "count is : " << count << endl;
 		int square = this->square_to_num(move_string.substr(1, 2));
 		char direction = move_string[3];
     int change;
@@ -201,7 +201,7 @@ vector<vector<pair<int, char>>> Game::execute_move(int current_piece, string mov
     int prev_square = square;
     for (int i = 4; i < move_string.size(); i++) {
       int next_count = (int)(move_string[i] - '0');
-      cerr << "next count is : " << next_count << endl;
+      //cerr << "next count is : " << next_count << endl;
       int next_square = prev_square + change;
       if (board[next_square].size() > 0 && board[next_square].back().second == 'S') {
         board[next_square][board[next_square].size() - 1] = make_pair(board[next_square].back().first, 'F');
@@ -210,12 +210,12 @@ vector<vector<pair<int, char>>> Game::execute_move(int current_piece, string mov
         auto begin = board[square].begin() + (board[square].size() - count);
         auto end = board[square].end();
         board[next_square].insert(board[next_square].end(), begin, end);
-        print_vector(board[next_square]);
+        //print_vector(board[next_square]);
       } else {
         auto begin = board[square].begin() + (board[square].size() - count);
         auto end = board[square].begin() + (board[square].size() - count + next_count);
         board[next_square].insert(board[next_square].end(), begin, end);
-        print_vector(board[next_square]);
+        //print_vector(board[next_square]);
       }
       prev_square = next_square;
       count -= next_count;
@@ -225,7 +225,7 @@ vector<vector<pair<int, char>>> Game::execute_move(int current_piece, string mov
     auto begin = board[square].begin() + (board[square].size() - count);
     auto end = board[square].end();
 		board[square].erase(begin, end);
-    print_vector(board[square]);
+    //print_vector(board[square]);
   }
   return board;
 }
