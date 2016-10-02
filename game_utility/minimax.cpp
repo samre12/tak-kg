@@ -67,14 +67,15 @@ public:
     while (true) {
       if (moves == 0) {
         if (this->player == 0) {
-          double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, true);
+          double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, true, moves);
         } else {
           string oponent_move;
           cin >> oponent_move;
           std::cerr << "Oponent Move : " << oponent_move << std::endl;
           //cerr << "Executing Move" << endl;
           state = this->game.execute_move(this->player, oponent_move, state, &players);
-          double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, true);
+          moves++;
+          double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, true, moves);
         }
       } else {
         string oponent_move;
@@ -82,21 +83,22 @@ public:
         std::cerr << "Oponent Move : " << oponent_move << std::endl;
         //cerr << "Executing Move" << endl;
         state = this->game.execute_move(this->player, oponent_move, state, &players);
-        double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, false);
+        moves++;
+        double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, false, moves);
       }
       moves++;
     }
   }
 
-  double evaluation_function(vector<vector<pair<int, char>>> state) {
+  double evaluation_function(vector<vector<pair<int, char>>> state, vector<Player> players, int moves) {
     return features::diff_flats(state, this->player);
   }
 
   double minval(vector<vector<pair<int, char>>> state, vector<Player> players, double alpha, double beta, int depth,
-                bool first) {
+                bool first, int moves) {
     if (depth == 0) {
       //cerr << "Reached evaluation function " << endl;
-      double evaluation = evaluation_function(state);
+      double evaluation = evaluation_function(state, players, moves);
       //cerr << "Evaluation : " << evaluation << endl;
       return evaluation;
     }
@@ -106,7 +108,7 @@ public:
       for (auto iter = all_moves.begin(); iter != all_moves.end(); iter++) {
         vector<Player> current_players = players;
         auto current_state = this->game.execute_move(this->player, *iter, state, &current_players);
-        double child = maxval(current_state, current_players, alpha, beta, depth - 1, false);
+        double child = maxval(current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
         beta = min(beta, child);
         if (alpha >= beta) {
           return child;
@@ -119,7 +121,7 @@ public:
       for (auto iter = all_moves.begin(); iter != all_moves.end(); iter++) {
         vector<Player> current_players = players;
         auto current_state = this->game.execute_move(1 - this->player, *iter, state, &current_players);
-        double child = maxval(current_state, current_players, alpha, beta, depth - 1, false);
+        double child = maxval(current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
         beta = min(beta, child);
         if (alpha >= beta) {
           return child;
@@ -131,10 +133,10 @@ public:
   }
 
   double maxval(vector<vector<pair<int, char>>> state, vector<Player> players, double alpha, double beta, int depth,
-                bool first) {
+                bool first, int moves) {
     if (depth == 0) {
       //cerr << "Reached evaluation function " << endl;
-      double evaluation = evaluation_function(state);
+      double evaluation = evaluation_function(state, players, moves);
       //cerr << "Evaluation : " << evaluation << endl;
       return evaluation;
     }
@@ -147,9 +149,9 @@ public:
         auto current_state = this->game.execute_move(1 - this->player, *iter, state, &current_players);
         double child;
         if (this->player == 0) {
-          child = minval(current_state, current_players, alpha, beta, depth - 1, true);
+          child = minval(current_state, current_players, alpha, beta, depth - 1, true, moves + 1);
         } else {
-          child = minval(current_state, current_players, alpha, beta, depth - 1, false);
+          child = minval(current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
         }
         alpha = max(alpha, child);
         if (alpha >= beta) {
@@ -168,7 +170,7 @@ public:
       for (auto iter = all_moves.begin(); iter != all_moves.end(); iter++) {
         vector<Player> current_players = players;
         auto current_state = this->game.execute_move(this->player, *iter, state, &current_players);
-        double child = minval(current_state, current_players, alpha, beta, depth - 1, false);
+        double child = minval(current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
         alpha = max(alpha, child);
         if (alpha >= beta) {
           if (depth == depth_initial) {
