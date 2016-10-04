@@ -7,7 +7,7 @@
 #include <limits>
 #include <math.h>
 
-#define depth_initial 4
+#define depth_initial 3
 
 #include "Game.h"
 #include "Game.cpp"
@@ -77,6 +77,7 @@ public:
       if (moves == 0) {
         if (this->player == 0) {
           double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, true, moves);
+          moves++;
         } else {
           string oponent_move;
           cin >> oponent_move;
@@ -84,18 +85,51 @@ public:
           //cerr << "Executing Move" << endl;
           state = this->game.execute_move(this->player, oponent_move, state, &players);
           moves++;
+          for (int i = 0; i < 25; i++) {
+            if (state[i].size() > 0) {
+              cerr << state[i].back().first << " ";
+            } else {
+              cerr << "e" << " ";
+            }
+          }
           double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, true, moves);
+          moves++;
         }
-      } else {
+      } else if (moves == 1) {
         string oponent_move;
         cin >> oponent_move;
         std::cerr << "Oponent Move : " << oponent_move << std::endl;
         //cerr << "Executing Move" << endl;
         state = this->game.execute_move(this->player, oponent_move, state, &players);
         moves++;
+        for (int i = 0; i < 25; i++) {
+          if (state[i].size() > 0) {
+            cerr << state[i].back().first << " ";
+          } else {
+            cerr << "e" << " ";
+          }
+        }
         double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, false, moves);
+        moves++;
+      } else {
+        string oponent_move;
+        cin >> oponent_move;
+        std::cerr << "Oponent Move : " << oponent_move << std::endl;
+        //cerr << "Executing Move" << endl;
+        state = this->game.execute_move(1 - this->player, oponent_move, state, &players);
+        moves++;
+        for (int i = 0; i < 25; i++) {
+          if (state[i].size() > 0) {
+            cerr << state[i].back().first << " ";
+          } else {
+            cerr << "e" << " ";
+          }
+        }
+        //cerr << "Evaluation Function on state" << endl;
+        //pair<bool, double> result = evaluation_function1(state, players, moves);
+        double value = maxval(state, players, alpha_initial, beta_initial, depth_initial, false, moves);
+        moves++;
       }
-      moves++;
     }
   }
 
@@ -107,35 +141,33 @@ public:
     has_up.resize(n * n);
     has_down.resize(n * n);
 
-    for(int i = 0; i < n; i++)
-  	{
-  		for(int j = 0; j < n; j++)
-  		{
-  			x[i + n*(j-1)] = i+1;
-  			y[i + n*(j-1)] = j+1;
+    for(int i = 0; i < n; i++){
+  		for(int j = 0; j < n; j++){
+  			x[i + n*j] = i;
+  			y[i + n*j] = j;
 
-  			if (i > 1){
-  				has_left[i+n*(j-1)] = true;
+  			if (i > 0){
+  				has_left[i+n*j] = true;
   			}
-  			if( i == 1){
-  				has_left[i+n*(j-1)] = false;
+  			if( i == 0){
+  				has_left[i+n*j] = false;
   			}
-  			if (i < n){
-  				has_right[i+n*(j-1)] = true;
+  			if (i < (n - 1)){
+  				has_right[i+n*j] = true;
   			}
-  			if( i == n){
-  				has_left[i+n*(j-1)] = false;
+  			if( i == n - 1){
+  				has_left[i+n*j] = true;
   			}
-        if (j > 1){
-  				has_down[i+n*(j-1)] = true;
+        if (j > 0){
+  				has_down[i+n*j] = true;
   			}
-  			if( j == 1){
-  				has_down[i+n*(j-1)] = false;
+  			if( j == 0){
+  				has_down[i+n*j] = false;
   			}
-  			if (j < n){
-  				has_up[i+n*(j-1)] = true;
+  			if (j < (n - 1)){
+  				has_up[i+n*j] = true;
   			}
-  			if( j == n){
+  			if( j == (n - 1)){
   				has_up[i+n*(j-1)] = false;
   			}
   		}
@@ -144,38 +176,48 @@ public:
 
   int flood_fill(int j, int player, vector<vector<pair<int, char>>> state, vector<bool>* explored)
   {
-  	int sum;
-  	if (!(*explored)[j] && (state[j].back().first == player) && (state[j].back().second == 'F' || state[j].back().second == 'C'))
-  	{
-  		(*explored)[j] = true;
-  		sum = sum + 1;
+  	int sum = 0;
+    if ((state[j].size() > 0)) {
+    	if (!(*explored)[j] && (state[j].back().first == player) && (state[j].back().second == 'F' || state[j].back().second == 'C'))
+    	{
+    		(*explored)[j] = true;
+    		sum = sum + 1;
 
-  		min_x = std::min(x[j],min_x);
-  		max_x = std::max(x[j],max_x);
-  		min_y = std::min(y[j],min_y);
-  		max_y = std::max(y[j],max_y);
+    		min_x = std::min(x[j],min_x);
+    		max_x = std::max(x[j],max_x);
+    		min_y = std::min(y[j],min_y);
+    		max_y = std::max(y[j],max_y);
 
-  		if (has_left[j] && !(*explored)[j - 1]){
-  			sum += flood_fill(j - 1, player, state, explored);
-  		}
+    		if (has_left[j]) {
+          if (!(*explored)[j - 1]){
+    			  sum += flood_fill(j - 1, player, state, explored);
+          }
+    		}
 
-  		if (has_right[j] && !(*explored)[j + 1]){
-  			sum += flood_fill(j + 1, player, state, explored);
-  		}
+    		if (has_right[j]){
+          if (!(*explored)[j + 1]) {
+    			  sum += flood_fill(j + 1, player, state, explored);
+          }
+    		}
 
-  		if (has_down[j] && !(*explored)[j - n]){
-  			sum += flood_fill(j - n, player, state, explored);
-  		}
+    		if (has_down[j]){
+          if (!(*explored)[j - n]) {
+    			  sum += flood_fill(j - n, player, state, explored);
+          }
+        }
 
-  		if (has_up[j] && !(*explored)[j + n]){
-  			sum += flood_fill(j + n, player, state, explored);
-  		}
-  	}
+    		if (has_up[j]){
+          if (!(*explored)[j + n]) {
+            sum += flood_fill(j + n, player, state, explored);
+          }
+        }
+    	}
+    }
     return sum;
   }
 
 
-  pair<bool, double> evaluation_function(vector<vector<pair<int, char>>> state, vector<Player> players, int moves) {
+  pair<bool, double> evaluation_function1(vector<vector<pair<int, char>>> state, vector<Player> players, int moves) {
     int size = n * n;
     int dim1 = 0;
   	int dim2 = 0;
@@ -190,38 +232,44 @@ public:
 
   	for (int i = 0; i < size; i++)
   	{
-  		if (!exploredc[i])
+  		if (!explored[i])
   		{
-  			if ((state[i].back().first == player) && (state[i].back().second == 'F' || state[i].back().second == 'C'))
-  			{
-  				min_x = x[i];
-  				max_x = x[i];
-  				min_y = y[i];
-  				max_y = y[i];
-          int sum = flood_fill(i, this->player, state, &explored);
-  				p1_isles.push_back(sum);
-  				strength_player1 = strength_player1 + pow(sum, 1.1);
-  				dim1 = std::max(max_y - min_y, dim1);
-  				dim1 = std::max(max_x - min_x, dim1);
-  				dimsum1 = dimsum1 + dim1;
-  			}
-  			if ((state[i].back().first == (1 - player)) && (state[i].back().second == 'F' || state[i].back().second == 'C'))
-  			{
-  				min_x = x[i];
-  				max_x = x[i];
-  				min_y = y[i];
-  				max_y = y[i];
-  				int sum = flood_fill(i, 1 - this->player, state, &explored);
-  				p2_isles.push_back(sum);
-  				strength_player2 = strength_player2 + pow(sum, 1.1);
-  				dim2 = std::max(max_y - min_y, dim2);
-  				dim2 = std::max(max_x - min_x, dim2);
-  				dimsum2 = dimsum2 + dim2;
-  			}
+        if ((state[i].size() > 0)) {
+          //cerr << "State Top is " << state[i].back().first << " ";
+    			if ((state[i].back().first == player) && (state[i].back().second == 'F' || state[i].back().second == 'C'))
+    			{
+    				min_x = x[i];
+    				max_x = x[i];
+    				min_y = y[i];
+    				max_y = y[i];
+            int sum = flood_fill(i, this->player, state, &explored);
+            //cerr << state[i].back().first << ", " << i << ", " << sum << " " << endl;
+    				p1_isles.push_back(sum);
+    				strength_player1 = strength_player1 + pow(sum, 1.1);
+    				dim1 = std::max(max_y - min_y, dim1);
+    				dim1 = std::max(max_x - min_x, dim1);
+    				dimsum1 = dimsum1 + dim1;
+    			}
+    			if ((state[i].back().first == (1 - player)) && (state[i].back().second == 'F' || state[i].back().second == 'C'))
+    			{
+    				min_x = x[i];
+    				max_x = x[i];
+    				min_y = y[i];
+    				max_y = y[i];
+    				int sum = flood_fill(i, 1 - this->player, state, &explored);
+            //cerr << 1 - this->player << ", " << i << ", " << sum << " " << endl;
+    				p2_isles.push_back(sum);
+    				strength_player2 = strength_player2 + pow(sum, 1.1);
+    				dim2 = std::max(max_y - min_y, dim2);
+    				dim2 = std::max(max_x - min_x, dim2);
+    				dimsum2 = dimsum2 + dim2;
+    			}
+        }
   		}
   	}
-  	double eval1 = strength_player1 + 3*players[this->player].flats + 6*players[this->player].capstones - 8*players[this->player].capstones;
-  	double eval2 = strength_player2 + 3*players[1 - this->player].flats + 6*players[this->player].capstones - 8*players[1 - this->player].capstones;
+    //cerr << "Completed Exploration" << endl;
+  	double eval1 = strength_player1 + players[this->player].flats + 3*players[this->player].capstones;
+  	double eval2 = strength_player2 + players[1 - this->player].flats + 3*players[this->player].capstones;
 
   	if(dim1 == n - 1)
   	{
@@ -244,10 +292,15 @@ public:
 
   }
 
+  pair<bool, double> evaluation_function2(vector<vector<pair<int, char>>> state, vector<Player> players, int moves) {
+    return make_pair(false, features::diff_flats(state, this->player));
+  }
+
   double minval(vector<vector<pair<int, char>>> state, vector<Player> players, double alpha, double beta, int depth,
                 bool first, int moves) {
-    auto result = evaluation_function(state, players, moves);
-    cerr << "Evaluation function computed" << endl;
+    //cerr << "Reached Evaluation Function" << endl;
+    auto result = evaluation_function1(state, players, moves);
+    //cerr << "Evaluation function computed" << endl;
     if (result.first || depth == 0) {
       return result.second;
     }
@@ -283,8 +336,9 @@ public:
 
   double maxval(vector<vector<pair<int, char>>> state, vector<Player> players, double alpha, double beta, int depth,
                 bool first, int moves) {
-    auto result = evaluation_function(state, players, moves);
-    cerr << "Evaluation function computed" << endl;
+    //cerr << "Reached Evaluation Function" << endl;
+    auto result = evaluation_function1(state, players, moves);
+    //cerr << "Evaluation function computed" << endl;
     if (result.first || depth == 0) {
       return result.second;
     }
@@ -304,7 +358,7 @@ public:
         alpha = max(alpha, child);
         if (alpha >= beta) {
           if (depth == depth_initial) {
-            this->execute_optimal_move(*iter);
+            this->execute_optimal_move(*iter, first);
           }
           return child;
         }
@@ -322,7 +376,7 @@ public:
         alpha = max(alpha, child);
         if (alpha >= beta) {
           if (depth == depth_initial) {
-            this->execute_optimal_move(*iter);
+            this->execute_optimal_move(*iter, first);
           }
           return child;
         }
@@ -333,17 +387,21 @@ public:
       }
     }
     if (depth == depth_initial) {
-      this->execute_optimal_move(best_move);
+      this->execute_optimal_move(best_move, first);
     }
     return best_child;
 
   }
 
-  void execute_optimal_move(string move) {
+  void execute_optimal_move(string move, bool first) {
     //output optimal strategy and execute on the current state
     cerr << "Chosen Move : " << move << endl;
     //cerr << "Executing Move" << endl;
-    this->state = this->game.execute_move(this->player, move, this->state, &(this->players));
+    if (first) {
+        this->state = this->game.execute_move(1 - this->player, move, this->state, &(this->players));
+    } else {
+      this->state = this->game.execute_move(this->player, move, this->state, &(this->players));
+    }
     move = move + '\n';
     cout << move;
   }

@@ -48,6 +48,7 @@ public:
       if (moves == 0) {
         //first move
         auto all_moves = game.generate_all_moves(1, true, board, players);
+        /*
         cerr << "Possible Moves : ";
         auto iter = all_moves.begin();
         while (iter != all_moves.end()) {
@@ -55,14 +56,23 @@ public:
           iter++;
         }
         cerr << endl;
+        */
         move = all_moves[rand() % all_moves.size()];
         cerr << "Executing Move" << endl;
   			board = this->game.execute_move(1, move, board, &players);
-  			move = move + '\n';
+        for (int i = 0; i < 25; i++) {
+          if (board[i].size() > 0) {
+            cerr << board[i].back().first << " ";
+          } else {
+            cerr << "e" << " ";
+          }
+        }
+        move = move + '\n';
   			cerr << "Chosen move : " << move;
   			cout << move;
       } else {
         auto all_moves = game.generate_all_moves(0, false, board, players);
+        /*
         cerr << "Possible Moves : ";
         auto iter = all_moves.begin();
         while (iter != all_moves.end()) {
@@ -70,9 +80,18 @@ public:
           iter++;
         }
         cerr << endl;
+        */
         move = all_moves[rand() % all_moves.size()];
         cerr << "Executing Move" << endl;
   			board = this->game.execute_move(0, move, board, &players);
+        for (int i = 0; i < 25; i++) {
+          if (board[i].size() > 0) {
+            cerr << board[i].back().first << " ";
+          } else {
+            cerr << "e ";
+          }
+        }
+        cerr << endl;
   			move = move + '\n';
   			cerr << "Chosen move : " << move;
   			cout << move;
