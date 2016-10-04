@@ -1,3 +1,3 @@
 #!/bin/bash
-g++ -std=c++11 minimax.cpp
-./a.out
+g++ -std=c++11 -o minimax minimax.cpp
+./minimax
