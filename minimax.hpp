@@ -20,8 +20,9 @@
 struct move_ordering {
   string move;
   double evaluation;
+  bool terminal;
 
-  move_ordering(string move_string, double eval) : move(move_string), evaluation(eval) {}
+  move_ordering(string move_string, double eval, bool is_terminal) : move(move_string), evaluation(eval), terminal(is_terminal) {}
 };
 
 struct lesser_than_key {

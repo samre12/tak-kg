@@ -118,25 +118,25 @@ double minimax::minval(state* new_state, vector<Player> players, double alpha, d
   if (first) {
     vector<string> all_moves = new_state->generate_all_moves(player, true, players);
 
-    unordered_map<string, state_player> state_map;
     vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(player, *iter, &current_players);
       child.evaluation_function1(current_players, moves + 1);
-      move_ordering move((*iter), child.evaluation);
+      move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
-      state_player new_state_player;
-      new_state_player.game_state = child;
-      new_state_player.players = current_players;
-      state_map.insert(make_pair((*iter), new_state_player));
     }
 
     std::sort(new_moves.begin(), new_moves.end(), lesser_than_key());
 
     for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
-      double child = maxval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
+      vector<Player> current_players = players;
+      state child_state = (*new_state);
+      child_state.execute_move(player, (*iter).move, &current_players);
+      child_state.evaluation = iter->evaluation;
+      child_state.terminal = iter->terminal;
+      double child = maxval(&child_state, current_players, alpha, beta, depth - 1, false, moves + 1);
       beta = min(beta, child);
       if (alpha >= beta) {
         return child;
@@ -147,25 +147,25 @@ double minimax::minval(state* new_state, vector<Player> players, double alpha, d
   } else {
     vector<string> all_moves = new_state->generate_all_moves(1 - player, false, players);
 
-    unordered_map<string, state_player> state_map;
     vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(1 - player, *iter, &current_players);
       child.evaluation_function1(current_players, moves + 1);
-      move_ordering move((*iter), child.evaluation);
+      move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
-      state_player new_state_player;
-      new_state_player.game_state = child;
-      new_state_player.players = current_players;
-      state_map.insert(make_pair((*iter), new_state_player));
     }
 
     std::sort(new_moves.begin(), new_moves.end(), lesser_than_key());
 
     for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
-      double child = maxval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
+      vector<Player> current_players = players;
+      state child_state = (*new_state);
+      child_state.execute_move(1 - player, (*iter).move, &current_players);
+      child_state.evaluation = iter->evaluation;
+      child_state.terminal = iter->terminal;
+      double child = maxval(&child_state, current_players, alpha, beta, depth - 1, false, moves + 1);
       beta = min(beta, child);
       if (alpha >= beta) {
         return child;
@@ -188,31 +188,29 @@ double minimax::maxval(state* new_state, vector<Player> players, double alpha, d
   if (first) {
     vector<string> all_moves = new_state->generate_all_moves(1 - player, true, players);
 
-    unordered_map<string, state_player> state_map;
     vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(1 - player, *iter, &current_players);
       child.evaluation_function1(current_players, moves + 1);
-      move_ordering move((*iter), child.evaluation);
+      move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
-      state_player new_state_player;
-      new_state_player.game_state = child;
-      new_state_player.players = current_players;
-      state_map.insert(make_pair((*iter), new_state_player));
     }
 
     std::sort(new_moves.begin(), new_moves.end(), greater_than_key());
 
     for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
-      state child_state = state_map[iter->move].game_state;
-      vector<Player> current_players = state_map[iter->move].players;
+      vector<Player> current_players = players;
+      state child_state = (*new_state);
+      child_state.execute_move(1 - player, (*iter).move, &current_players);
+      child_state.evaluation = iter->evaluation;
+      child_state.terminal = iter->terminal;
       double child;
       if (player == 0) {
-        child = minval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, true, moves + 1);
+        child = minval(&child_state, current_players, alpha, beta, depth - 1, true, moves + 1);
       } else {
-        child = minval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
+        child = minval(&child_state, current_players, alpha, beta, depth - 1, false, moves + 1);
       }
       alpha = max(alpha, child);
       if (alpha >= beta) {
@@ -229,25 +227,25 @@ double minimax::maxval(state* new_state, vector<Player> players, double alpha, d
   } else {
     vector<string> all_moves = new_state->generate_all_moves(player, false, players);
 
-    unordered_map<string, state_player> state_map;
     vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(player, *iter, &current_players);
       child.evaluation_function1(current_players, moves + 1);
-      move_ordering move((*iter), child.evaluation);
+      move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
-      state_player new_state_player;
-      new_state_player.game_state = child;
-      new_state_player.players = current_players;
-      state_map.insert(make_pair((*iter), new_state_player));
     }
 
     std::sort(new_moves.begin(), new_moves.end(), greater_than_key());
 
     for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
-      double child = minval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
+      vector<Player> current_players = players;
+      state child_state = (*new_state);
+      child_state.execute_move(player, (*iter).move, &current_players);
+      child_state.evaluation = iter->evaluation;
+      child_state.terminal = iter->terminal;
+      double child = minval(&child_state, current_players, alpha, beta, depth - 1, false, moves + 1);
       alpha = max(alpha, child);
       if (alpha >= beta) {
         if (depth == depth_initial) {
