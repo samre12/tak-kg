@@ -45,6 +45,7 @@ void minimax::play() {
       if (player == 0) {
         gettimeofday(&start, NULL);
         depth_initial = depth(moves);
+        game_state.evaluation_function1(players, moves);
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
         moves++;
       } else {
@@ -57,6 +58,7 @@ void minimax::play() {
         game_state.execute_move(player, oponent_move, &players);
         moves++;
         depth_initial = depth(moves);
+        game_state.evaluation_function1(players, moves);
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
         moves++;
       }
@@ -70,6 +72,7 @@ void minimax::play() {
       game_state.execute_move(player, oponent_move, &players);
       moves++;
       depth_initial = depth(moves);
+      game_state.evaluation_function1(players, moves);
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
       moves++;
     } else {
@@ -84,6 +87,7 @@ void minimax::play() {
       //cerr << "Evaluation Function on state" << endl;
       //pair<bool, double> result = evaluation_function1(state, players, moves);
       depth_initial = depth(moves);
+      game_state.evaluation_function1(players, moves);
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
       moves++;
     }
@@ -93,11 +97,11 @@ void minimax::play() {
 int minimax::depth(int moves) {
   int output;
   if (this->time_remaining < ((time_limit * 40) / 100) && this->time_remaining > ((time_limit * 5) / 100)) {
-    output = 2;
+    output = 3;
   } else if (this->time_remaining < ((time_limit * 5) / 100)){
-    output = 1;
+    output = 2;
   } else {
-	  output = 3;
+	  output = 4;
   }
   //cerr << "Current Depth : " << output << endl;
   std::cerr << "depth " << output << '\n';
@@ -106,19 +110,33 @@ int minimax::depth(int moves) {
 
 double minimax::minval(state* new_state, vector<Player> players, double alpha, double beta, int depth, bool first, int moves) {
   //cerr << "Reached Evaluation Function" << endl;
-  pair<double, double> result = new_state->evaluation_function1(players, moves);
   //cerr << "Evaluation function computed" << endl;
-  if (result.first || depth == 0) {
-    return result.second;
+  if (new_state->terminal || depth == 0) {
+    return new_state->evaluation;
   }
   double best_child = std::numeric_limits<double>::infinity();
   if (first) {
     vector<string> all_moves = new_state->generate_all_moves(player, true, players);
+
+    unordered_map<string, state_player> state_map;
+    vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
-      state current_state = (*new_state);
-      current_state.execute_move(player, *iter, &current_players);
-      double child = maxval(&current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
+      state child = (*new_state);
+      child.execute_move(player, *iter, &current_players);
+      child.evaluation_function1(current_players, moves + 1);
+      move_ordering move((*iter), child.evaluation);
+      new_moves.push_back(move);
+      state_player new_state_player;
+      new_state_player.game_state = child;
+      new_state_player.players = current_players;
+      state_map.insert(make_pair((*iter), new_state_player));
+    }
+
+    std::sort(new_moves.begin(), new_moves.end(), lesser_than_key());
+
+    for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
+      double child = maxval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
       beta = min(beta, child);
       if (alpha >= beta) {
         return child;
@@ -128,11 +146,26 @@ double minimax::minval(state* new_state, vector<Player> players, double alpha, d
 
   } else {
     vector<string> all_moves = new_state->generate_all_moves(1 - player, false, players);
+
+    unordered_map<string, state_player> state_map;
+    vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
-      state current_state = (*new_state);
-      current_state.execute_move(1 - player, *iter, &current_players);
-      double child = maxval(&current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
+      state child = (*new_state);
+      child.execute_move(1 - player, *iter, &current_players);
+      child.evaluation_function1(current_players, moves + 1);
+      move_ordering move((*iter), child.evaluation);
+      new_moves.push_back(move);
+      state_player new_state_player;
+      new_state_player.game_state = child;
+      new_state_player.players = current_players;
+      state_map.insert(make_pair((*iter), new_state_player));
+    }
+
+    std::sort(new_moves.begin(), new_moves.end(), lesser_than_key());
+
+    for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
+      double child = maxval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
       beta = min(beta, child);
       if (alpha >= beta) {
         return child;
@@ -146,55 +179,85 @@ double minimax::minval(state* new_state, vector<Player> players, double alpha, d
 //execute optimal move
 double minimax::maxval(state* new_state, vector<Player> players, double alpha, double beta, int depth, bool first, int moves) {
   //cerr << "Reached Evaluation Function" << endl;
-  pair<double, double> result = new_state->evaluation_function1(players, moves);
   //cerr << "Evaluation function computed" << endl;
-  if (result.first || depth == 0) {
-    return result.second;
+  if (new_state->terminal || depth == 0) {
+    return new_state->evaluation;
   }
   double best_child = -1 * std::numeric_limits<double>::infinity();
   string best_move;
   if (first) {
     vector<string> all_moves = new_state->generate_all_moves(1 - player, true, players);
 
+    unordered_map<string, state_player> state_map;
+    vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
-      state current_state = (*new_state);
-      current_state.execute_move(1 - player, *iter, &current_players);
+      state child = (*new_state);
+      child.execute_move(1 - player, *iter, &current_players);
+      child.evaluation_function1(current_players, moves + 1);
+      move_ordering move((*iter), child.evaluation);
+      new_moves.push_back(move);
+      state_player new_state_player;
+      new_state_player.game_state = child;
+      new_state_player.players = current_players;
+      state_map.insert(make_pair((*iter), new_state_player));
+    }
+
+    std::sort(new_moves.begin(), new_moves.end(), greater_than_key());
+
+    for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
+      state child_state = state_map[iter->move].game_state;
+      vector<Player> current_players = state_map[iter->move].players;
       double child;
       if (player == 0) {
-        child = minval(&current_state, current_players, alpha, beta, depth - 1, true, moves + 1);
+        child = minval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, true, moves + 1);
       } else {
-        child = minval(&current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
+        child = minval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
       }
       alpha = max(alpha, child);
       if (alpha >= beta) {
         if (depth == depth_initial) {
-          this->execute_optimal_move(*iter, first);
+          this->execute_optimal_move((*iter).move, first);
         }
         return child;
       }
       if (best_child < child) {
         best_child = child;
-        best_move = *iter;
+        best_move = (*iter).move;
       }
     }
   } else {
     vector<string> all_moves = new_state->generate_all_moves(player, false, players);
+
+    unordered_map<string, state_player> state_map;
+    vector<move_ordering> new_moves;
     for (vector<string>::iterator iter = all_moves.begin(); iter != all_moves.end(); iter++) {
       vector<Player> current_players = players;
-      state current_state = (*new_state);
-      current_state.execute_move(player, *iter, &current_players);
-      double child = minval(&current_state, current_players, alpha, beta, depth - 1, false, moves + 1);
+      state child = (*new_state);
+      child.execute_move(player, *iter, &current_players);
+      child.evaluation_function1(current_players, moves + 1);
+      move_ordering move((*iter), child.evaluation);
+      new_moves.push_back(move);
+      state_player new_state_player;
+      new_state_player.game_state = child;
+      new_state_player.players = current_players;
+      state_map.insert(make_pair((*iter), new_state_player));
+    }
+
+    std::sort(new_moves.begin(), new_moves.end(), greater_than_key());
+
+    for (vector<move_ordering>::iterator iter = new_moves.begin(); iter != new_moves.end(); iter++) {
+      double child = minval(&(state_map[iter->move].game_state), state_map[iter->move].players, alpha, beta, depth - 1, false, moves + 1);
       alpha = max(alpha, child);
       if (alpha >= beta) {
         if (depth == depth_initial) {
-          this->execute_optimal_move(*iter, first);
+          this->execute_optimal_move((*iter).move, first);
         }
         return child;
       }
       if (best_child < child) {
         best_child = child;
-        best_move = *iter;
+        best_move = (*iter).move;
       }
     }
   }

@@ -352,7 +352,7 @@ pair<double, double> state::evaluate_stack_strength(int i) {
   return make_pair(strength_player1, strength_player2);
 }
 
-pair<bool, double> state::evaluation_function1(vector<Player> players, int moves) {
+void state::evaluation_function1(vector<Player> players, int moves) {
   int size = n * n;
   int dim1 = 0;
 	int dim2 = 0;
@@ -477,7 +477,8 @@ pair<bool, double> state::evaluation_function1(vector<Player> players, int moves
     output.first = false;
     output.second = eval1 - eval2;
   }
-  return output;
+  this->terminal = output.first;
+  this->evaluation = output.second;
 }
 
 // pair<bool, double> state::evaluation_function2(vector<Player> players, int moves) {

@@ -11,10 +11,38 @@
 #include <math.h>
 #include <sys/time.h>
 #include <random>
+#include <unordered_map>
 
 #include "variables.hpp"
 #include "utility_functions.h"
 #include "state.hpp"
+
+struct move_ordering {
+  string move;
+  double evaluation;
+
+  move_ordering(string move_string, double eval) : move(move_string), evaluation(eval) {}
+};
+
+struct lesser_than_key {
+  inline bool operator() (const move_ordering& move1, const move_ordering& move2)
+    {
+        return (move1.evaluation < move2.evaluation);
+    }
+};
+
+struct greater_than_key {
+  inline bool operator() (const move_ordering& move1, const move_ordering& move2)
+    {
+        return (move1.evaluation > move2.evaluation);
+    }
+};
+
+struct state_player {
+  state game_state;
+  vector<Player> players;
+};
+
 
 class minimax {
 public:
