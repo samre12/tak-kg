@@ -462,11 +462,13 @@ void state::evaluation_function1(vector<Player> players, int moves) {
 
   if (complete || !are_remaining_pieces(players)) {
     if (counter1 > counter2) {
+      std::cerr << "flatwin for player : " << player << '\n';
       eval1 = 10000;
       eval2 = 0;
       output.first = true;
       output.second = eval1 - eval2;
     } else if (counter1 < counter2) {
+      std::cerr << "flatwin for player : " << 1 - player << '\n';
       eval2 = 10000 ;
       eval1 = 0;
       output.first = true;
@@ -494,12 +496,14 @@ void state::evaluation_function1(vector<Player> players, int moves) {
   if(dim1 == n - 1)
 	{
 		p1_rw = true;
+    std::cerr << "Road for possbile for player : " << player << '\n';
 		eval1 = 20000;
 		eval2 = 0;
 	}
 	if(dim2 == n - 1)
 	{
 		p2_rw = true;
+    std::cerr << "Road for possbile for player : " << 1 - player << '\n';
 		eval2 = 20000;
 		eval1 = 0;
 	}

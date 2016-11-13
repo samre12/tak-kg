@@ -46,8 +46,8 @@ void minimax::play() {
         gettimeofday(&start, NULL);
         depth_initial = depth(moves);
         game_state.evaluation_function1(players, moves);
-        std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
+        std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         std::cerr <<  "Backed Up Value : " << value << '\n';
         moves++;
       } else {
@@ -61,8 +61,8 @@ void minimax::play() {
         moves++;
         depth_initial = depth(moves);
         game_state.evaluation_function1(players, moves);
-        std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
+        std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         std::cerr <<  "Backed Up Value : " << value << '\n';
         moves++;
       }
@@ -77,8 +77,8 @@ void minimax::play() {
       moves++;
       depth_initial = depth(moves);
       game_state.evaluation_function1(players, moves);
-      std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
+      std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       std::cerr <<  "Backed Up Value : " << value << '\n';
       moves++;
     } else {
@@ -94,8 +94,8 @@ void minimax::play() {
       //pair<bool, double> result = evaluation_function1(state, players, moves);
       depth_initial = depth(moves);
       game_state.evaluation_function1(players, moves);
-      std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
+      std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       std::cerr <<  "Backed Up Value : " << value << '\n';
       moves++;
     }
