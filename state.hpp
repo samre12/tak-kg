@@ -9,6 +9,7 @@
 #include <utility>
 #include <ctype.h>
 #include <cmath>
+#include <unordered_map>
 
 #include "variables.hpp"
 #include "utility_functions.h"
@@ -18,12 +19,24 @@ struct Player{
   int capstones;
 };
 
+struct stack {
+  int reserves;
+  int captives;
+  char top;
+  int controller;
+
+  stack() {}
+  stack(int res, int cap, char top_piece, int cont);
+};
+
 class state {
 public:
   std::vector<vector<pair<int, char>>> board;
   double evaluation;
   bool terminal;
   int min_x, max_x, min_y, max_y;
+
+  vector<stack> stacks;
 
   state() {};
 
@@ -49,7 +62,7 @@ public:
 
   vector<int> rough_influence_measure(int i, int player);
 
-  pair<double, double> evaluate_stack_strength(int i);
+  pair<double, double> evaluate_stack_strength();
 
   void evaluation_function1(vector<Player> players, int moves);
 

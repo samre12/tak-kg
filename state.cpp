@@ -3,6 +3,13 @@
 
 #include "state.hpp"
 
+stack::stack(int res, int cap, char top_piece, int cont) {
+  reserves = res;
+  captives = cap;
+  top = top_piece;
+  controller = cont;
+}
+
 void state::initialize_state() {
   for (int i = 0; i < total_squares; i++) {
     vector<pair<int, char>> initial;
@@ -12,6 +19,8 @@ void state::initialize_state() {
   min_y = 0;
   max_x = 0;
   max_y = 0;
+
+  stacks.resize(n * n);
 }
 
 bool state::check_valid(int square, char direction, vector<int> partition) {
@@ -130,11 +139,14 @@ void state::execute_move(int current_piece, string move_string, vector<Player> *
       //print_vector(board[square]);
 			(*players)[current_piece].capstones -= 1;
     }
+    stack new_stack(1, 0, board[square].back().second, current_piece);
+    stacks[square] = new_stack;
   }
 	else if (return_digit(move_string[0]) != -1) {
 		int count = (int)(move_string[0] - '0');
     //cerr << "count is : " << count << endl;
 		int square = square_to_num(move_string.substr(1, 2));
+    int square_player = board[square].back().first;
 		char direction = move_string[3];
     int change;
 		if (direction == '+')
@@ -147,32 +159,85 @@ void state::execute_move(int current_piece, string move_string, vector<Player> *
 			change = -1;
 
     int prev_square = square;
+
+    int total_reserves = 0;
+    int total_captives = 0;
     for (int i = 4; i < move_string.size(); i++) {
       int next_count = (int)(move_string[i] - '0');
       //cerr << "next count is : " << next_count << endl;
       int next_square = prev_square + change;
+
+      int reserves = 0;
+      int captives = 0;
+      int stack_reserves = stacks[next_square].reserves;
+      int stack_captives = stacks[next_square].captives;
+
+      vector<pair<int, char> >::iterator begin;
+      vector<pair<int, char> >::iterator end;
+
       if (board[next_square].size() > 0 && board[next_square].back().second == 'S') {
         board[next_square][board[next_square].size() - 1] = make_pair(board[next_square].back().first, 'F');
       }
       if (next_count == count) {
-        vector<pair<int, char> >::iterator begin = board[square].begin() + (board[square].size() - count);
-        vector<pair<int, char> >::iterator end = board[square].end();
-        board[next_square].insert(board[next_square].end(), begin, end);
-        //print_vector(board[next_square]);
+        begin = board[square].begin() + (board[square].size() - count);
+        end = board[square].end();
       } else {
-        vector<pair<int, char> >::iterator begin = board[square].begin() + (board[square].size() - count);
-        vector<pair<int, char> >::iterator end = board[square].begin() + (board[square].size() - count + next_count);
-        board[next_square].insert(board[next_square].end(), begin, end);
-        //print_vector(board[next_square]);
+        begin = board[square].begin() + (board[square].size() - count);
+        end = board[square].begin() + (board[square].size() - count + next_count);
       }
+
+      board[next_square].insert(board[next_square].end(), begin, end);
+
+      for (vector<pair<int, char> >::iterator iter = begin; iter != end; iter++) {
+        if (iter->first == square_player) {
+          reserves++;
+        } else {
+          captives++;
+        }
+      }
+
+      stack new_stack;
+      new_stack.top = board[next_square].back().second;
+      new_stack.controller = board[next_square].back().first;
+      if (stacks[next_square].controller == board[next_square].back().first) {
+        if (board[next_square].back().first == square_player) {
+          new_stack.captives = stack_captives + captives;
+          new_stack.reserves = stack_reserves + reserves;
+        } else {
+          new_stack.captives = stack_captives + reserves;
+          new_stack.reserves = stack_reserves + captives;
+        }
+      } else {
+        if (board[next_square].back().first == square_player) {
+          new_stack.reserves = stack_captives + reserves;
+          new_stack.captives = stack_reserves + captives;
+        } else {
+          new_stack.reserves = stack_captives + captives;
+          new_stack.captives = stack_reserves + reserves;
+        }
+      }
+      stacks[next_square] = new_stack;
+
       prev_square = next_square;
       count -= next_count;
+      total_reserves += reserves;
+      total_captives += captives;
     }
 
 		count = (int)(move_string[0] - '0');
     vector<pair<int, char> >::iterator begin = board[square].begin() + (board[square].size() - count);
     vector<pair<int, char> >::iterator end = board[square].end();
 		board[square].erase(begin, end);
+
+    stacks[square].reserves -= total_reserves;
+    stacks[square].captives -= total_captives;
+    if (square_player != board[square].back().first) {
+      int temp = stacks[square].reserves;
+      stacks[square].reserves = stacks[square].captives;
+      stacks[square].captives = temp;
+    }
+    stacks[square].controller = board[square].back().first;
+    stacks[square].top = board[square].back().second;
     //print_vector(board[square]);
   }
 }
@@ -295,58 +360,31 @@ vector<int> state::rough_influence_measure(int i, int player) {
 	return {enemy_flats, enemy_blocks, enemy_caps, self_flats, self_blocks};
 }
 
-pair<double, double> state::evaluate_stack_strength(int i) {
+pair<double, double> state::evaluate_stack_strength() {
   double strength_player1 = 0;
   double strength_player2 = 0;
-  int reserves = 0;
-  int captives = 0;
-  if (board[i].back().first == player) {
-    //vector<int> influence = rough_influence_measure(i, player, board);
-    //cerr << influence.size() << endl;
-    for (int j = 0; j < board[i].size(); j++) {
-      if (board[i][j].first == player) {
-        reserves++;
+
+  for (int i = 0; i < stacks.size(); i++) {
+    if (board[i].size() > 1) {
+      int reserves = stacks[i].reserves;
+      int captives = stacks[i].captives;
+      int size = reserves + captives;
+      if (stacks[i].controller == player) {
+        if (stacks[i].top == 'C')
+          strength_player1 += pow(reserves, 1.6) + captives;
+        else if (stacks[i].top == 'S')
+          strength_player1 += pow(reserves, 1.4) + captives;
+        else
+          strength_player1 += pow(reserves, 1.2) + captives;
       } else {
-        captives++;
+        if (stacks[i].top == 'C')
+          strength_player2 += pow(reserves, 1.8) + pow(captives, 1.2);
+        else if (stacks[i].top == 'S')
+          strength_player2 += pow(reserves, 1.6) + pow(captives, 1.1);
+        else
+          strength_player2 += pow(reserves, 1.4) + captives;
       }
     }
-    /*
-    int capstone = (board[i].back().second == 'C') ? 1 : 0;
-    strength_player1 = (influence[3] + 1.5* influence[4]) + (1.5 * capstone * reserves) - 0.5 * board[i].size() * position_strength(i);
-    strength_player1 -= (influence[0] * (1 - capstone)) + (1.5 * influence[1] * (captives / 2) * (1 - capstone)) + (2 * influence[2] * captives) + (captives * capstone);
-    */
-
-    if (board[i].back().second == 'C')
-      strength_player1 += reserves + pow(captives, 1.6) - board[i].size() * position_strength(i);
-    else if (board[i].back().second == 'S')
-      strength_player1 += reserves + pow(captives, 1.4) - board[i].size() * position_strength(i);
-    else
-      strength_player1 += reserves + pow(captives, 1.2) - board[i].size() * position_strength(i);
-
-
-  } else {
-    //vector<int> influence = rough_influence_measure(i, 1 - player, board);
-    //cerr << influence.size() << endl;
-    for (int j = 0; j < board[i].size(); j++) {
-      if (board[i][j].first == (1 - player)) {
-        reserves++;
-      } else {
-        captives++;
-      }
-    }
-    /*
-    int capstone = (board[i].back().second == 'C') ? 1 : 0;
-    strength_player2 = (influence[3] + 1.5 * influence[4]) + (1.5 * capstone * reserves) - 0.5 * board[i].size() * position_strength(i);
-    strength_player2 -= (influence[0] * (1 - capstone)) + (1.5 * influence[1] * (captives / 2) * (1 - capstone)) + (2 * influence[2] * captives) + (captives * capstone);
-    */
-
-    if (board[i].back().second == 'C')
-      strength_player2 += 1.5 * (pow(reserves, 1.6) + pow(captives, 2)) - 1.5 * board[i].size() * position_strength(i);
-    else if (board[i].back().second == 'S')
-      strength_player2 += reserves + pow(captives, 1.4) - 1.2 * board[i].size() * position_strength(i);
-    else
-      strength_player2 += reserves + pow(captives, 1.2) - board[i].size() * position_strength(i);
-
   }
   //cerr << "strength evaluated" << endl;
   return make_pair(strength_player1, strength_player2);
@@ -368,17 +406,15 @@ void state::evaluation_function1(vector<Player> players, int moves) {
   bool complete = true;
   int counter1 = 0;
   int counter2 = 0;
-
 	for (int i = 0; i < size; i++)
 	{
+    pair<double, double> stack_evaluation = evaluate_stack_strength();
+    strength_player1 += stack_evaluation.first;
+    strength_player2 += stack_evaluation.second;
     if ((board[i].size() > 0)) {
       //cerr << "board Top is " << board[i].back().first << " ";
 
       /********  Evaluate Stack Strength  and Position Strength  *********/
-      pair<double, double> stack_evaluation = evaluate_stack_strength(i);
-      strength_player1 += stack_evaluation.first;
-      strength_player2 += stack_evaluation.second;
-
       if (!explored[i]) {
   			if ((board[i].back().first == player) && (board[i].back().second == 'F' || board[i].back().second == 'C'))
   			{
@@ -418,8 +454,8 @@ void state::evaluation_function1(vector<Player> players, int moves) {
     }
 	}
   //cerr << "Completed Exploration" << endl;
-	double eval1 = strength_player1 +  0.8 * players[player].flats + 3 * players[player].capstones;
-	double eval2 = strength_player2 +  0.8 * players[1 - player].flats + 3 * players[1 - player].capstones;
+	double eval1 = strength_player1 +  0.8 * players[player].flats + 2 * players[player].capstones;
+	double eval2 = strength_player2 +  0.8 * players[1 - player].flats + 2 * players[1 - player].capstones;
 
   //need to check flat wins and draw positions
   pair<bool, double> output;

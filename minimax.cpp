@@ -46,7 +46,9 @@ void minimax::play() {
         gettimeofday(&start, NULL);
         depth_initial = depth(moves);
         game_state.evaluation_function1(players, moves);
+        std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
+        std::cerr <<  "Backed Up Value : " << value << '\n';
         moves++;
       } else {
         string oponent_move;
@@ -59,7 +61,9 @@ void minimax::play() {
         moves++;
         depth_initial = depth(moves);
         game_state.evaluation_function1(players, moves);
+        std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
+        std::cerr <<  "Backed Up Value : " << value << '\n';
         moves++;
       }
     } else if (moves == 1) {
@@ -73,7 +77,9 @@ void minimax::play() {
       moves++;
       depth_initial = depth(moves);
       game_state.evaluation_function1(players, moves);
+      std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
+      std::cerr <<  "Backed Up Value : " << value << '\n';
       moves++;
     } else {
       string oponent_move;
@@ -88,7 +94,9 @@ void minimax::play() {
       //pair<bool, double> result = evaluation_function1(state, players, moves);
       depth_initial = depth(moves);
       game_state.evaluation_function1(players, moves);
+      std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
+      std::cerr <<  "Backed Up Value : " << value << '\n';
       moves++;
     }
   }
@@ -271,6 +279,11 @@ void minimax::execute_optimal_move(string move, bool first) {
   } else {
     game_state.execute_move(player, move, &players);
   }
+  // for (int i = 0; i < game_state.stacks.size(); i++) {
+  //   if (game_state.board[i].size() > 1) {
+  //     cerr << "For square : " << i << " " << game_state.stacks[i].reserves << " " << game_state.stacks[i].captives << " " << game_state.stacks[i].top << " " << game_state.stacks[i].controller << endl;
+  //   }
+  // }
   move = move + '\n';
   cout << move;
   //std::cerr << "my move : " << move << " move length : " << move.length() << '\n';
