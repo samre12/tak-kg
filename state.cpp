@@ -3,6 +3,13 @@
 
 #include "state.hpp"
 
+stack::stack() {
+  reserves = 0;
+  captives = 0;
+  top = 'N';
+  controller = 2;
+}
+
 stack::stack(int res, int cap, char top_piece, int cont) {
   reserves = res;
   captives = cap;
@@ -21,6 +28,9 @@ void state::initialize_state() {
   max_y = 0;
 
   stacks.resize(n * n);
+  std::fill(stacks.begin(), stacks.end(), stack());
+  influence.resize(2);
+  std::fill(influence.begin(), influence.end(), vector<int>(3));
 }
 
 bool state::check_valid(int square, char direction, vector<int> partition) {
@@ -249,13 +259,12 @@ double state::position_strength(int i) {
 }
 
 bool state::are_remaining_pieces(vector<Player> players) {
-  bool output = false;
   for (int i = 0; i < players.size(); i++) {
-    if (players[i].flats > 0 || players[i].capstones > 0) {
-      output = true;
+    if (players[i].flats == 0) {
+      return false;
     }
   }
-  return output;
+  return true;
 }
 
 
@@ -274,24 +283,88 @@ int state::flood_fill(int j, int player, vector<bool>* explored)
   		max_y = std::max(y[j],max_y);
 
   		if (has_left[j]) {
+        int next_square = j - 1;
+        if (board[next_square].size() > 0) {
+          if (board[next_square].back().first == player) {
+            influence[player][1]++;
+          } else {
+            if (board[next_square].back().second == 'F') {
+              influence[player][2]++;
+            } else if (board[next_square].back().second == 'S') {
+              if (board[j].back().second == 'C') {
+                influence[player][2]++;
+              }
+            }
+          }
+        } else {
+          influence[player][0]++;
+        }
         if (!(*explored)[j - 1]){
   			  sum += flood_fill(j - 1, player, explored);
         }
   		}
 
   		if (has_right[j]){
+        int next_square = j + 1;
+        if (board[next_square].size() > 0) {
+          if (board[next_square].back().first == player) {
+            influence[player][1]++;
+          } else {
+            if (board[next_square].back().second == 'F') {
+              influence[player][2]++;
+            } else if (board[next_square].back().second == 'S') {
+              if (board[j].back().second == 'C') {
+                influence[player][2]++;
+              }
+            }
+          }
+        } else {
+          influence[player][0]++;
+        }
         if (!(*explored)[j + 1]) {
   			  sum += flood_fill(j + 1, player, explored);
         }
   		}
 
   		if (has_down[j]){
+        int next_square = j - n;
+        if (board[next_square].size() > 0) {
+          if (board[next_square].back().first == player) {
+            influence[player][1]++;
+          } else {
+            if (board[next_square].back().second == 'F') {
+              influence[player][2]++;
+            } else if (board[next_square].back().second == 'S') {
+              if (board[j].back().second == 'C') {
+                influence[player][2]++;
+              }
+            }
+          }
+        } else {
+          influence[player][0]++;
+        }
         if (!(*explored)[j - n]) {
   			  sum += flood_fill(j - n, player, explored);
         }
       }
 
   		if (has_up[j]){
+        int next_square = j + n;
+        if (board[next_square].size() > 0) {
+          if (board[next_square].back().first == player) {
+            influence[player][1]++;
+          } else {
+            if (board[next_square].back().second == 'F') {
+              influence[player][2]++;
+            } else if (board[next_square].back().second == 'S') {
+              if (board[j].back().second == 'C') {
+                influence[player][2]++;
+              }
+            }
+          }
+        } else {
+          influence[player][0]++;
+        }
         if (!(*explored)[j + n]) {
           sum += flood_fill(j + n, player, explored);
         }
@@ -361,28 +434,28 @@ vector<int> state::rough_influence_measure(int i, int player) {
 }
 
 pair<double, double> state::evaluate_stack_strength() {
+  eval_weights weights;
   double strength_player1 = 0;
   double strength_player2 = 0;
 
   for (int i = 0; i < stacks.size(); i++) {
     if (board[i].size() > 1) {
-      int reserves = stacks[i].reserves;
+      int reserves = stacks[i].reserves - 1;
       int captives = stacks[i].captives;
-      int size = reserves + captives;
       if (stacks[i].controller == player) {
         if (stacks[i].top == 'C')
-          strength_player1 += pow(reserves, 1.6) + captives;
+          strength_player1 += reserves * weights.hard_flats[2] + captives * weights.soft_flats[2];
         else if (stacks[i].top == 'S')
-          strength_player1 += pow(reserves, 1.4) + captives;
+          strength_player1 += reserves * weights.hard_flats[1] + captives * weights.soft_flats[1];
         else
-          strength_player1 += pow(reserves, 1.2) + captives;
+          strength_player1 += reserves * weights.hard_flats[0] + captives * weights.soft_flats[0];
       } else {
         if (stacks[i].top == 'C')
-          strength_player2 += pow(reserves, 1.8) + pow(captives, 1.2);
+          strength_player2 += reserves * weights.hard_flats[2] + captives * weights.soft_flats[2];
         else if (stacks[i].top == 'S')
-          strength_player2 += pow(reserves, 1.6) + pow(captives, 1.1);
+          strength_player2 += reserves * weights.hard_flats[1] + captives * weights.soft_flats[1];
         else
-          strength_player2 += pow(reserves, 1.4) + captives;
+          strength_player2 += reserves * weights.hard_flats[0] + captives * weights.soft_flats[0];
       }
     }
   }
@@ -390,7 +463,8 @@ pair<double, double> state::evaluate_stack_strength() {
   return make_pair(strength_player1, strength_player2);
 }
 
-void state::evaluation_function1(vector<Player> players, int moves) {
+void state::evaluation_function1(vector<Player> players, int moves, int depth) {
+  eval_weights weights;
   int size = n * n;
   int dim1 = 0;
 	int dim2 = 0;
@@ -404,124 +478,289 @@ void state::evaluation_function1(vector<Player> players, int moves) {
   bool p1_rw = false;
   bool p2_rw = false;
   bool complete = true;
-  int counter1 = 0;
-  int counter2 = 0;
+  int p1_flats = 0;
+  int p1_walls = 0;
+  int p2_flats = 0;
+  int p2_walls = 0;
+  double p1_flat_weight;
+  double p2_flat_weight;
+  std::fill(influence.begin(), influence.end(), vector<int>(3));
+
+  pair<double, double> stack_evaluation = evaluate_stack_strength();
+  strength_player1 += stack_evaluation.first;
+  strength_player2 += stack_evaluation.second;
+
 	for (int i = 0; i < size; i++)
 	{
-    pair<double, double> stack_evaluation = evaluate_stack_strength();
-    strength_player1 += stack_evaluation.first;
-    strength_player2 += stack_evaluation.second;
     if ((board[i].size() > 0)) {
-      //cerr << "board Top is " << board[i].back().first << " ";
-
-      /********  Evaluate Stack Strength  and Position Strength  *********/
       if (!explored[i]) {
-  			if ((board[i].back().first == player) && (board[i].back().second == 'F' || board[i].back().second == 'C'))
+  			if (board[i].back().first == player)
   			{
-  				min_x = x[i];
-  				max_x = x[i];
-  				min_y = y[i];
-  				max_y = y[i];
-          int sum = flood_fill(i, player, &explored);
-          counter1 += sum;
-          //cerr << board[i].back().first << ", " << i << ", " << sum << " " << endl;
-  				p1_isles.push_back(sum);
-          int current_dim = 0;
-          current_dim = std::max(max_y - min_y, max_x - min_x);
-  				dim1 = std::max(current_dim, dim1);
-  				dimsum1 = dimsum1 + dim1;
-          strength_player1 += pow(sum, 1.2) + 2.5 * pow(current_dim, 2);
+          if (board[i].back().second == 'F' || board[i].back().second == 'C') {
+            if (board[i].back().second == 'F') {
+              p1_flats++;
+            }
+            min_x = x[i];
+    				max_x = x[i];
+    				min_y = y[i];
+    				max_y = y[i];
+            int sum = flood_fill(i, player, &explored);
+            //cerr << board[i].back().first << ", " << i << ", " << sum << " " << endl;
+    				p1_isles.push_back(sum);
+            int current_dim = 0;
+            current_dim = std::max(max_y - min_y, max_x - min_x);
+    				dim1 = std::max(current_dim, dim1);
+            strength_player1 += (weights.groups[max_y - min_y] + weights.groups[max_x - min_x]);
+          } else {
+            p1_walls++;
+            if (has_left[i]) {
+              int next_square = i - 1;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == player) {
+                  influence[player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[player][2]++;
+                  }
+                }
+              } else {
+                influence[player][0]++;
+              }
+            }
+            if (has_right[i]) {
+              int next_square = i + 1;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == player) {
+                  influence[player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[player][2]++;
+                  }
+                }
+              } else {
+                influence[player][0]++;
+              }
+            }
+            if (has_down[i]) {
+              int next_square = i - n;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == player) {
+                  influence[player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[player][2]++;
+                  }
+                }
+              } else {
+                influence[player][0]++;
+              }
+            }
+            if (has_up[i]) {
+              int next_square = i + n;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == player) {
+                  influence[player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[player][2]++;
+                  }
+                }
+              } else {
+                influence[player][0]++;
+              }
+            }
+          }
   			}
-  			if ((board[i].back().first == (1 - player)) && (board[i].back().second == 'F' || board[i].back().second == 'C'))
+  			else
   			{
-  				min_x = x[i];
-  				max_x = x[i];
-  				min_y = y[i];
-  				max_y = y[i];
-  				int sum = flood_fill(i, 1 - player, &explored);
-          counter2 += sum;
-          //cerr << 1 - player << ", " << i << ", " << sum << " " << endl;
-  				p2_isles.push_back(sum);
-          int current_dim = 0;
-          current_dim = std::max(max_y - min_y, max_x - min_x);
-  				dim2 = std::max(current_dim, dim2);
-  				dimsum2 = dimsum2 + dim2;
-          strength_player2 += pow(sum, 2) + 3.5 * pow(current_dim, 2);
+          if (board[i].back().second == 'F' || board[i].back().second == 'C') {
+            if (board[i].back().second == 'F') {
+              p2_flats++;
+            }
+            min_x = x[i];
+    				max_x = x[i];
+    				min_y = y[i];
+    				max_y = y[i];
+    				int sum = flood_fill(i, 1 - player, &explored);
+            //cerr << 1 - player << ", " << i << ", " << sum << " " << endl;
+    				p2_isles.push_back(sum);
+            int current_dim = std::max(max_y - min_y, max_x - min_x);
+    				dim2 = std::max(current_dim, dim2);
+            strength_player2 += (weights.groups[max_y - min_y] + weights.groups[max_x - min_x]);
+          } else {
+            p2_walls++;
+            if (has_left[i]) {
+              int next_square = i - 1;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == 1 - player) {
+                  influence[1 - player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[1 - player][2]++;
+                  }
+                }
+              } else {
+                influence[1 - player][0]++;
+              }
+            }
+            if (has_right[i]) {
+              int next_square = i + 1;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == 1 - player) {
+                  influence[1 - player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[1 - player][2]++;
+                  }
+                }
+              } else {
+                influence[1 - player][0]++;
+              }
+            }
+            if (has_down[i]) {
+              int next_square = i - n;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == 1 - player) {
+                  influence[1 - player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[1 - player][2]++;
+                  }
+                }
+              } else {
+                influence[1 - player][0]++;
+              }
+            }
+            if (has_up[i]) {
+              int next_square = i + n;
+              if (board[next_square].size() > 0) {
+                if (board[next_square].back().first == 1 - player) {
+                  influence[1 - player][1]++;
+                } else {
+                  if (board[next_square].back().second == 'F') {
+                    influence[1 - player][2]++;
+                  }
+                }
+              } else {
+                influence[1 - player][0]++;
+              }
+            }
+          }
   			}
+      } else {
+        if (board[i].back().first == player) {
+          if (board[i].back().second == 'F') {
+            p1_flats++;
+          }
+        } else {
+          if (board[i].back().second == 'F') {
+            p2_flats++;
+          }
+        }
+
       }
     } else {
       complete = false;
     }
 	}
-  //cerr << "Completed Exploration" << endl;
-	double eval1 = strength_player1 +  0.8 * players[player].flats + 2 * players[player].capstones;
-	double eval2 = strength_player2 +  0.8 * players[1 - player].flats + 2 * players[1 - player].capstones;
 
   //need to check flat wins and draw positions
   pair<bool, double> output;
 
-  if (complete || !are_remaining_pieces(players)) {
-    if (counter1 > counter2) {
-      std::cerr << "flatwin for player : " << player << '\n';
-      eval1 = 10000;
-      eval2 = 0;
-      output.first = true;
-      output.second = eval1 - eval2;
-    } else if (counter1 < counter2) {
-      std::cerr << "flatwin for player : " << 1 - player << '\n';
-      eval2 = 10000 ;
-      eval1 = 0;
-      output.first = true;
-      output.second = eval1 - eval2;
-    } else {
-      if (players[player].flats > players[1 - player].flats) {
-        eval1 = 10000;
-        eval2 = 0;
-        output.first = true;
-        output.second = eval1 - eval2;
-      } else if (players[player].flats < players[1 - player].flats) {
-        eval2 = 10000;
-        eval1 = 0;
-        output.first = true;
-        output.second = eval1 - eval2;
-      } else {
-        output.first = true;
-        output.second = 6000;
-      }
-    }
-  }
-
-  //if (dim1 >= 3)
-  //  cerr << "Max Length Path : " << dim1 << endl;
   if(dim1 == n - 1)
 	{
 		p1_rw = true;
-    std::cerr << "Road for possbile for player : " << player << '\n';
-		eval1 = 20000;
-		eval2 = 0;
+    //std::cerr << "Road for possbile for player : " << player << '\n';
 	}
 	if(dim2 == n - 1)
 	{
 		p2_rw = true;
-    std::cerr << "Road for possbile for player : " << 1 - player << '\n';
-		eval2 = 20000;
-		eval1 = 0;
+    //std::cerr << "Road win possbile opponent" << '\n';
 	}
-
-  if (p1_rw || p2_rw) {
-    //if (p1_rw)
-    //  cerr << "Road Win possible!" << endl;
+  if (p1_rw) {
     output.first = true;
-    output.second = eval1 - eval2;
+    output.second = 2 * weights.eval_max;
+  } else if (p2_rw) {
+    output.first = true;
+    output.second = 2 * weights.eval_min;
+  } else if (complete || !are_remaining_pieces(players)) {
+    if (p1_flats > p2_flats) {
+      //std::cerr << "flatwin for player : " << player << '\n';
+      output.first = true;
+      output.second = weights.eval_max;
+      //std::cerr << "game complete due to my flat win " << p1_flats << " " << p2_flats << " " << depth << '\n';
+    } else if (p1_flats < p2_flats) {
+      //std::cerr << "flatwin for player : " << 1 - player << '\n';
+      output.first = true;
+      output.second = weights.eval_min;
+      //std::cerr << "game complete due to enemy flat win " << p1_flats << " " << p2_flats << " " << depth << '\n';
+    } else {
+      if (players[player].flats > players[1 - player].flats) {
+        output.first = true;
+        output.second = 0.5 * weights.eval_max;
+      } else if (players[player].flats < players[1 - player].flats) {
+        output.first = true;
+        output.second = 0.5 * weights.eval_min;
+      } else {
+        output.first = true;
+        output.second = 0;
+      }
+    }
   } else {
     output.first = false;
-    output.second = eval1 - eval2;
+    int threshold = weights.flat_threshold[n];
+    int p1_position = std::min(p1_flats, threshold);
+    int p2_position = std::min(p2_flats, threshold);
+
+    p1_flat_weight = ((weights.flat_stones[0] * p1_position) + (weights.flat_stones[1] * (threshold - p1_position)))  / ((double) threshold);
+    p2_flat_weight = ((weights.flat_stones[0] * p2_position) + (weights.flat_stones[1] * (threshold - p2_position))) / ((double) threshold);
+
+    strength_player1 += (p1_flat_weight * p1_flats);
+    strength_player1 += (weights.standing_stone * p1_walls);
+    strength_player1 += (weights.cap_stone * (1 - players[player].capstones));
+    strength_player1 += (influence[player][0] * weights.influence[0] + influence[player][1] * weights.influence[1] + influence[player][2] * weights.influence[2]);
+
+    strength_player2 += (p2_flat_weight * p2_flats);
+    strength_player2 += (weights.standing_stone * p2_walls);
+    strength_player2 += (weights.cap_stone * (1 - players[1 - player].capstones));
+    strength_player2 += (influence[1 - player][0] * weights.influence[0] + influence[1 - player][1] * weights.influence[1] + influence[1 - player][2] * weights.influence[2]);
+
+    output.second = strength_player1 - strength_player2;
   }
+
   this->terminal = output.first;
   this->evaluation = output.second;
+  if (this->evaluation > (2 * weights.eval_max) || this->evaluation < (2 * weights.eval_min)) {
+    std::cerr << "State Condition : " << '\n';
+    std::cerr << p1_flats << " " << p1_walls << " " << p2_flats << " " << p2_walls << '\n';
+    std::cerr << p1_flat_weight << " " << p2_flat_weight << '\n';
+    std::cerr << "Influence : " << '\n';
+    for (int i = 0; i < influence.size(); i++) {
+      for (int j = 0; j < influence[i].size(); j++) {
+        std::cerr << influence[i][j] << " ";
+      }
+      std::cerr << '\n';
+    }
+    std::cerr << "p1 isles" << '\n';
+    for (int i = 0;i < p1_isles.size(); i++) {
+      std::cerr << p1_isles[i] << " " ;
+    }
+    std::cerr << '\n';
+    std::cerr << "p2 isles" << '\n';
+    for (int i = 0;i < p2_isles.size(); i++) {
+      std::cerr << p2_isles[i] << " " ;
+    }
+    std::cerr << '\n';
+    std::cerr << "Stacks in the state : " << '\n';
+    for (int i = 0; i < stacks.size(); i++) {
+      std::cerr << stacks[i].reserves << " " << stacks[i].captives << " " << stacks[i].top << " " << stacks[i].controller << '\n';
+    }
+    exit(0);
+  }
+  //std::cerr << "evaluation function : " << this->evaluation << '\n';
 }
 
-// pair<bool, double> state::evaluation_function2(vector<Player> players, int moves) {
+// pair<bool, double> state::evaluation_function2(vector<Player> players, int moves)
 //   return make_pair(false, diff_flats(player));
 // }
 

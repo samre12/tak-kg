@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -13,6 +14,7 @@
 
 #include "variables.hpp"
 #include "utility_functions.h"
+#include "weights.h"
 
 struct Player{
   int flats;
@@ -25,7 +27,7 @@ struct stack {
   char top;
   int controller;
 
-  stack() {}
+  stack();
   stack(int res, int cap, char top_piece, int cont);
 };
 
@@ -37,6 +39,7 @@ public:
   int min_x, max_x, min_y, max_y;
 
   vector<stack> stacks;
+  vector<vector<int> > influence;
 
   state() {};
 
@@ -64,7 +67,7 @@ public:
 
   pair<double, double> evaluate_stack_strength();
 
-  void evaluation_function1(vector<Player> players, int moves);
+  void evaluation_function1(vector<Player> players, int moves, int depth);
 
   // pair<bool, double> evaluation_function2(vector<Player> players, int moves);
 };

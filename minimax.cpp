@@ -35,7 +35,7 @@ void minimax::play() {
       players[0].flats = 40;
       players[0].capstones = 1;
 
-      players[1].flats = 21;
+      players[1].flats = 40;
       players[1].capstones = 1;
       break;
   }
@@ -45,10 +45,29 @@ void minimax::play() {
       if (player == 0) {
         gettimeofday(&start, NULL);
         depth_initial = depth(moves);
-        game_state.evaluation_function1(players, moves);
+        game_state.evaluation_function1(players, moves, depth_initial);
+        states_explored = 0;
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
         std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         std::cerr <<  "Backed Up Value : " << value << '\n';
+        // for (int i = n - 1; i >= 0; i--) {
+        //   for (int j = 0; j < n; j++) {
+        //     int k = n * i + j;
+        //     std::cerr << game_state.stacks[k].captives << " " << game_state.stacks[k].reserves << " " << game_state.stacks[k].top << " " << game_state.stacks[k].controller << " " << game_state.board[k].size();
+        //     std::cerr << "   ";
+        //   }
+        //   std::cerr << '\n';
+        // }
+        // std::cerr << "States Ended" << '\n';
+        std::cerr << "States Explored : " << states_explored << '\n';
+
+        // std::cerr << "Influence : " << '\n';
+        // for (int i = 0; i < game_state.influence.size(); i++) {
+        //   for (int j = 0; j < game_state.influence[i].size(); j++) {
+        //     std::cerr << game_state.influence[i][j] << " ";
+        //   }
+        //   std::cerr << '\n';
+        // }
         moves++;
       } else {
         string oponent_move;
@@ -60,10 +79,28 @@ void minimax::play() {
         game_state.execute_move(player, oponent_move, &players);
         moves++;
         depth_initial = depth(moves);
-        game_state.evaluation_function1(players, moves);
+        game_state.evaluation_function1(players, moves, depth_initial);
+        states_explored = 0;
         double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, true, moves);
         std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
         std::cerr <<  "Backed Up Value : " << value << '\n';
+        // for (int i = n - 1; i >= 0; i--) {
+        //   for (int j = 0; j < n; j++) {
+        //     int k = n * i + j;
+        //     std::cerr << game_state.stacks[k].captives << " " << game_state.stacks[k].reserves << " " << game_state.stacks[k].top << " " << game_state.stacks[k].controller << " " << game_state.board[k].size();
+        //     std::cerr << "   ";
+        //   }
+        //   std::cerr << '\n';
+        // }
+        // std::cerr << "States Ended" << '\n';
+        std::cerr << "States Explored : " << states_explored << '\n';
+        // std::cerr << "Influence : " << '\n';
+        // for (int i = 0; i < game_state.influence.size(); i++) {
+        //   for (int j = 0; j < game_state.influence[i].size(); j++) {
+        //     std::cerr << game_state.influence[i][j] << " ";
+        //   }
+        //   std::cerr << '\n';
+        // }
         moves++;
       }
     } else if (moves == 1) {
@@ -76,10 +113,28 @@ void minimax::play() {
       game_state.execute_move(player, oponent_move, &players);
       moves++;
       depth_initial = depth(moves);
-      game_state.evaluation_function1(players, moves);
+      game_state.evaluation_function1(players, moves, depth_initial);
+      states_explored = 0;
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
       std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       std::cerr <<  "Backed Up Value : " << value << '\n';
+      // for (int i = n - 1; i >= 0; i--) {
+      //   for (int j = 0; j < n; j++) {
+      //     int k = n * i + j;
+      //     std::cerr << game_state.stacks[k].captives << " " << game_state.stacks[k].reserves << " " << game_state.stacks[k].top << " " << game_state.stacks[k].controller << " " << game_state.board[k].size();
+      //     std::cerr << "   ";
+      //   }
+      //   std::cerr << '\n';
+      // }
+      // std::cerr << "States Ended" << '\n';
+      std::cerr << "States Explored : " << states_explored << '\n';
+      // std::cerr << "Influence : " << '\n';
+      // for (int i = 0; i < game_state.influence.size(); i++) {
+      //   for (int j = 0; j < game_state.influence[i].size(); j++) {
+      //     std::cerr << game_state.influence[i][j] << " ";
+      //   }
+      //   std::cerr << '\n';
+      // }
       moves++;
     } else {
       string oponent_move;
@@ -93,10 +148,28 @@ void minimax::play() {
       //cerr << "Evaluation Function on state" << endl;
       //pair<bool, double> result = evaluation_function1(state, players, moves);
       depth_initial = depth(moves);
-      game_state.evaluation_function1(players, moves);
+      game_state.evaluation_function1(players, moves, depth_initial);
+      states_explored = 0;
       double value = maxval(&game_state, players, alpha_initial, beta_initial, depth_initial, false, moves);
       std::cerr << "Evaluation Function : " << game_state.evaluation << '\n';
       std::cerr <<  "Backed Up Value : " << value << '\n';
+      // for (int i = n - 1; i >= 0; i--) {
+      //   for (int j = 0; j < n; j++) {
+      //     int k = n * i + j;
+      //     std::cerr << game_state.stacks[k].captives << " " << game_state.stacks[k].reserves << " " << game_state.stacks[k].top << " " << game_state.stacks[k].controller << " " << game_state.board[k].size();
+      //     std::cerr << "   ";
+      //   }
+      //   std::cerr << '\n';
+      // }
+      // std::cerr << "States Ended" << '\n';
+      std::cerr << "States Explored : " << states_explored << '\n';
+      // std::cerr << "Influence : " << '\n';
+      // for (int i = 0; i < game_state.influence.size(); i++) {
+      //   for (int j = 0; j < game_state.influence[i].size(); j++) {
+      //     std::cerr << game_state.influence[i][j] << " ";
+      //   }
+      //   std::cerr << '\n';
+      // }
       moves++;
     }
   }
@@ -104,12 +177,34 @@ void minimax::play() {
 
 int minimax::depth(int moves) {
   int output;
-  if (this->time_remaining < ((time_limit * 40) / 100) && this->time_remaining > ((time_limit * 5) / 100)) {
-    output = 3;
-  } else if (this->time_remaining < ((time_limit * 5) / 100)){
-    output = 2;
+  if (n == 5) {
+    if (this->time_remaining < ((time_limit * 40) / 100) && this->time_remaining > ((time_limit * 5) / 100)) {
+      output = 3;
+    } else if (this->time_remaining < ((time_limit * 5) / 100)){
+      output = 2;
+    } else {
+  	  output = 4;
+    }
+  } else if (n == 6) {
+    if (this->time_remaining < ((time_limit * 20) / 100) && this->time_remaining > ((time_limit * 5) / 100)) {
+      output = 2;
+    } else if (this->time_remaining < ((time_limit * 5) / 100)){
+      output = 1;
+    } else if (this->time_remaining < ((time_limit * 50) / 100)){
+  	  output = 3;
+    } else {
+      output = 4;
+    }
   } else {
-	  output = 4;
+    if (this->time_remaining < ((time_limit * 20) / 100) && this->time_remaining > ((time_limit * 5) / 100)) {
+      output = 2;
+    } else if (this->time_remaining < ((time_limit * 5) / 100)){
+      output = 1;
+    } else if (this->time_remaining < ((time_limit * 75) / 100)){
+  	  output = 3;
+    } else {
+      output = 4;
+    }
   }
   //cerr << "Current Depth : " << output << endl;
   std::cerr << "depth " << output << '\n';
@@ -119,6 +214,7 @@ int minimax::depth(int moves) {
 double minimax::minval(state* new_state, vector<Player> players, double alpha, double beta, int depth, bool first, int moves) {
   //cerr << "Reached Evaluation Function" << endl;
   //cerr << "Evaluation function computed" << endl;
+  states_explored++;
   if (new_state->terminal || depth == 0) {
     return new_state->evaluation;
   }
@@ -131,7 +227,7 @@ double minimax::minval(state* new_state, vector<Player> players, double alpha, d
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(player, *iter, &current_players);
-      child.evaluation_function1(current_players, moves + 1);
+      child.evaluation_function1(current_players, moves + 1, depth - 1);
       move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
     }
@@ -160,7 +256,7 @@ double minimax::minval(state* new_state, vector<Player> players, double alpha, d
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(1 - player, *iter, &current_players);
-      child.evaluation_function1(current_players, moves + 1);
+      child.evaluation_function1(current_players, moves + 1, depth - 1);
       move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
     }
@@ -188,6 +284,7 @@ double minimax::minval(state* new_state, vector<Player> players, double alpha, d
 double minimax::maxval(state* new_state, vector<Player> players, double alpha, double beta, int depth, bool first, int moves) {
   //cerr << "Reached Evaluation Function" << endl;
   //cerr << "Evaluation function computed" << endl;
+  states_explored++;
   if (new_state->terminal || depth == 0) {
     return new_state->evaluation;
   }
@@ -201,7 +298,7 @@ double minimax::maxval(state* new_state, vector<Player> players, double alpha, d
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(1 - player, *iter, &current_players);
-      child.evaluation_function1(current_players, moves + 1);
+      child.evaluation_function1(current_players, moves + 1, depth - 1);
       move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
     }
@@ -240,7 +337,7 @@ double minimax::maxval(state* new_state, vector<Player> players, double alpha, d
       vector<Player> current_players = players;
       state child = (*new_state);
       child.execute_move(player, *iter, &current_players);
-      child.evaluation_function1(current_players, moves + 1);
+      child.evaluation_function1(current_players, moves + 1, depth - 1);
       move_ordering move((*iter), child.evaluation, child.terminal);
       new_moves.push_back(move);
     }

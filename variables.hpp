@@ -21,5 +21,6 @@ extern vector<bool> has_left;
 extern vector<bool> has_right;
 extern vector<bool> has_down;
 extern vector<bool> has_up;
+extern int states_explored;
 
 #endif

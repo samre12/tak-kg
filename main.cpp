@@ -22,6 +22,7 @@ vector<bool> has_left;
 vector<bool> has_right;
 vector<bool> has_down;
 vector<bool> has_up;
+int states_explored;
 
 void partition(int n) {
   vector<std::vector<int>> output;
